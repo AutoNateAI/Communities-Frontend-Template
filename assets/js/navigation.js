@@ -20,8 +20,8 @@
       '        <li class="nav-item"><a class="nav-link" href="blog.html" data-nav="blog">Blog</a></li>',
       '      </ul>',
       '      <div class="d-flex gap-2 ms-lg-3">',
-      '        <a class="btn btn-outline-primary" href="login.html">Log in</a>',
-      '        <a class="btn btn-primary" href="signup.html">Sign up</a>',
+      '        <a class="btn btn-outline-primary" href="login.html" data-nav="login">Log in</a>',
+      '        <a class="btn btn-primary" href="signup.html" data-nav="signup">Sign up</a>',
       "      </div>",
       "    </div>",
       "  </div>",
@@ -60,16 +60,24 @@
       return;
     }
 
-    const navPath = NAV_TYPES[navType] || NAV_TYPES.unauth;
+    const resolvedNavType = NAV_TYPES[navType] ? navType : "unauth";
+    const navPath = NAV_TYPES[resolvedNavType];
+    const fallbackMarkup = NAV_FALLBACKS[resolvedNavType] || "";
+
+    if (fallbackMarkup) {
+      renderNavigation(container, resolvedNavType, activeNavKey, fallbackMarkup);
+    }
+
+    if (!navPath) {
+      return;
+    }
 
     $.get(navPath)
       .done(function (markup) {
-        renderNavigation(container, navType, activeNavKey, markup);
+        renderNavigation(container, resolvedNavType, activeNavKey, markup);
       })
       .fail(function (jqXHR, textStatus) {
         console.error("Failed to load navigation component", textStatus);
-        const fallbackMarkup = NAV_FALLBACKS[navType] || NAV_FALLBACKS.unauth;
-        renderNavigation(container, navType, activeNavKey, fallbackMarkup);
       });
   }
 
