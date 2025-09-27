@@ -1,10 +1,10 @@
-(function ($, global) {
-  const NAV_TYPES = {
+(function (global) {
+  var NAV_TYPES = {
     unauth: "components/unauth-nav.html",
     auth: "components/auth-nav.html",
   };
 
-  const NAV_FALLBACKS = {
+  var NAV_FALLBACKS = {
     unauth: [
       '<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">',
       '  <div class="container">',
@@ -22,7 +22,7 @@
       '      <div class="d-flex gap-2 ms-lg-3">',
       '        <a class="btn btn-outline-primary" href="login.html" data-nav="login">Log in</a>',
       '        <a class="btn btn-primary" href="signup.html" data-nav="signup">Sign up</a>',
-      "      </div>",
+      '      </div>',
       "    </div>",
       "  </div>",
       "</nav>",
@@ -47,22 +47,22 @@
   };
 
   function renderNavigation(container, navType, activeNavKey, markup) {
-    container.html(markup);
+    container.innerHTML = markup;
     if (navType === "auth") {
-      attachAuthNavHandlers();
+      attachAuthNavHandlers(container);
     }
-    highlightActiveNav(activeNavKey);
+    highlightActiveNav(container, activeNavKey);
   }
 
   function loadNavigation(navType, activeNavKey) {
-    const container = $("#nav-container");
-    if (!container.length) {
+    var container = global.document.getElementById("nav-container");
+    if (!container) {
       return;
     }
 
-    const resolvedNavType = NAV_TYPES[navType] ? navType : "unauth";
-    const navPath = NAV_TYPES[resolvedNavType];
-    const fallbackMarkup = NAV_FALLBACKS[resolvedNavType] || "";
+    var resolvedNavType = NAV_TYPES[navType] ? navType : "unauth";
+    var navPath = NAV_TYPES[resolvedNavType];
+    var fallbackMarkup = NAV_FALLBACKS[resolvedNavType] || "";
 
     if (fallbackMarkup) {
       renderNavigation(container, resolvedNavType, activeNavKey, fallbackMarkup);
@@ -72,48 +72,91 @@
       return;
     }
 
-    $.get(navPath)
-      .done(function (markup) {
-        renderNavigation(container, resolvedNavType, activeNavKey, markup);
-      })
-      .fail(function (jqXHR, textStatus) {
-        console.error("Failed to load navigation component", textStatus);
-      });
-  }
-
-  function attachAuthNavHandlers() {
-    $(document)
-      .off("click", "#signOutButton")
-      .on("click", "#signOutButton", function (event) {
-        event.preventDefault();
-        if (global.localStorage) {
-          global.localStorage.removeItem("authToken");
+    requestMarkup(navPath)
+      .then(function (markup) {
+        if (typeof markup === "string" && markup.trim()) {
+          renderNavigation(container, resolvedNavType, activeNavKey, markup);
         }
-        global.location.href = "login.html";
+      })
+      .catch(function (error) {
+        console.error("Failed to load navigation component", error);
       });
   }
 
-  function highlightActiveNav(activeNavKey) {
+  function requestMarkup(path) {
+    if (global.fetch) {
+      return global
+        .fetch(path, { cache: "no-cache" })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+          }
+          return response.text();
+        });
+    }
+
+    return new global.Promise(function (resolve, reject) {
+      var request = new XMLHttpRequest();
+      request.addEventListener("load", function () {
+        if (request.status >= 200 && request.status < 300) {
+          resolve(request.responseText);
+        } else {
+          reject(new Error("HTTP " + request.status));
+        }
+      });
+      request.addEventListener("error", function () {
+        reject(new Error("Network error"));
+      });
+      request.open("GET", path, true);
+      request.send();
+    });
+  }
+
+  function attachAuthNavHandlers(container) {
+    var signOutButton = container.querySelector("#signOutButton");
+    if (!signOutButton) {
+      return;
+    }
+
+    signOutButton.addEventListener("click", function (event) {
+      event.preventDefault();
+      if (global.localStorage) {
+        global.localStorage.removeItem("authToken");
+      }
+      global.location.href = "login.html";
+    });
+  }
+
+  function highlightActiveNav(container, activeNavKey) {
     if (!activeNavKey) {
       return;
     }
 
-    const navContainer = $("#nav-container");
-    const links = navContainer.find("[data-nav]");
+    var links = container.querySelectorAll("[data-nav]");
     if (!links.length) {
       return;
     }
 
-    links.removeClass("active").removeAttr("aria-current");
-    const activeLink = links.filter(`[data-nav="${activeNavKey}"]`).first();
-    if (activeLink.length) {
-      activeLink.addClass("active").attr("aria-current", "page");
+    for (var i = 0; i < links.length; i++) {
+      links[i].classList.remove("active");
+      links[i].removeAttribute("aria-current");
+    }
+
+    var activeLink = container.querySelector('[data-nav="' + activeNavKey + '"]');
+    if (activeLink) {
+      activeLink.classList.add("active");
+      activeLink.setAttribute("aria-current", "page");
     }
   }
 
-  $(function () {
-    const pageConfig = global.pageConfig || {};
+  function initNavigation() {
+    var pageConfig = global.pageConfig || {};
     loadNavigation(pageConfig.navType || "unauth", pageConfig.activeNav);
+  }
 
-  });
-})(jQuery, window);
+  if (global.document.readyState === "loading") {
+    global.document.addEventListener("DOMContentLoaded", initNavigation);
+  } else {
+    initNavigation();
+  }
+})(window);
