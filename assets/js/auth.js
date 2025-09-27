@@ -88,6 +88,11 @@
     const originalText = submitButton.text();
     submitButton.prop("disabled", true).text("Loading...");
 
+    if (!url) {
+      displayError($form, "Authentication service is unavailable. Please try again later.");
+      submitButton.prop("disabled", false).text(originalText);
+      return Promise.reject(new Error("Missing authentication endpoint"));
+    }
     const requestInit =
       typeof buildRequest === "function"
         ? buildRequest(payload)
@@ -115,11 +120,18 @@
   }
 
   $(function () {
-    const backendHost = global.AppConfig.backendHost;
+    const backendHost =
+      global.AppConfig && typeof global.AppConfig.backendHost === "string"
+        ? global.AppConfig.backendHost.trim()
+        : "";
 
     $("#signupForm").on("submit", function (event) {
       event.preventDefault();
       const $form = $(this);
+      if (!backendHost) {
+        displayError($form, "Authentication service is unavailable. Please try again later.");
+        return;
+      }
       const password = $form.find("#signupPassword").val();
       const confirmPassword = $form.find("#signupConfirmPassword").val();
 
@@ -136,7 +148,7 @@
       };
 
       submitForm({
-        url: `${backendHost}/auth/signup`,
+        url: backendHost ? `${backendHost}/auth/signup` : "",
         payload,
         $form,
       })
@@ -149,13 +161,17 @@
     $("#loginForm").on("submit", function (event) {
       event.preventDefault();
       const $form = $(this);
+      if (!backendHost) {
+        displayError($form, "Authentication service is unavailable. Please try again later.");
+        return;
+      }
       const payload = {
         username: $form.find("#loginUsername").val(),
         password: $form.find("#loginPassword").val(),
       };
 
       submitForm({
-        url: `${backendHost}/auth/login`,
+        url: backendHost ? `${backendHost}/auth/login` : "",
         payload,
         $form,
         buildRequest(data) {

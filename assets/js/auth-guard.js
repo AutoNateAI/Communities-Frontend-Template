@@ -1,6 +1,24 @@
 (function (global) {
   function hasToken() {
-    return !!(global.localStorage && global.localStorage.getItem("authToken"));
+    if (!global.localStorage) {
+      return false;
+    }
+
+    if (global.localStorage.getItem("authToken")) {
+      return true;
+    }
+
+    var rawSession = global.localStorage.getItem("authSession");
+    if (!rawSession) {
+      return false;
+    }
+
+    try {
+      var session = JSON.parse(rawSession);
+      return !!(session && session.accessToken);
+    } catch (error) {
+      return false;
+    }
   }
 
   function enforceAuth() {
