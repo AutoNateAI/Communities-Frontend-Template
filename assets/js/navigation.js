@@ -5,6 +5,7 @@
   };
 
   function loadNavigation(navType, activeNavKey) {
+
     const container = $("#nav-container");
     if (!container.length) {
       return;
@@ -16,6 +17,7 @@
         attachAuthNavHandlers();
       }
       highlightActiveNav(activeNavKey);
+
     });
   }
 
@@ -50,5 +52,6 @@
   $(function () {
     const pageConfig = global.pageConfig || {};
     loadNavigation(pageConfig.navType || "unauth", pageConfig.activeNav);
+
   });
 })(jQuery, window);
