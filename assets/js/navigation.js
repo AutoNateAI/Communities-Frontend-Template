@@ -106,5 +106,6 @@
   $(function () {
     const pageConfig = global.pageConfig || {};
     loadNavigation(pageConfig.navType || "unauth", pageConfig.activeNav);
+
   });
 })(jQuery, window);
