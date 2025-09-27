@@ -93,7 +93,6 @@
       submitButton.prop("disabled", false).text(originalText);
       return Promise.reject(new Error("Missing authentication endpoint"));
     }
-
     const requestInit =
       typeof buildRequest === "function"
         ? buildRequest(payload)
