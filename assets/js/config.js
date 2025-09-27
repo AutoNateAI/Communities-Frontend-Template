@@ -8,15 +8,25 @@
     },
   };
 
+  const PRODUCTION_HOSTS = ["autonateai.github.io"];
+
   const resolveEnvironment = () => {
     const fromGlobal = global.APP_ENV;
     if (fromGlobal && ENVIRONMENTS[fromGlobal]) {
       return fromGlobal;
     }
-    const fromStorage = global.localStorage && global.localStorage.getItem("appEnv");
+
+    const fromStorage =
+      global.localStorage && global.localStorage.getItem("appEnv");
     if (fromStorage && ENVIRONMENTS[fromStorage]) {
       return fromStorage;
     }
+
+    const host = global.location && global.location.host;
+    if (host && PRODUCTION_HOSTS.includes(host)) {
+      return "production";
+    }
+
     return "development";
   };
 
