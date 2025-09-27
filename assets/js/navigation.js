@@ -112,18 +112,79 @@
     });
   }
 
+  function readStoredSession() {
+    if (!global.localStorage) {
+      return null;
+    }
+
+    var session = null;
+    var rawSession = global.localStorage.getItem("authSession");
+    if (rawSession) {
+      try {
+        session = JSON.parse(rawSession);
+      } catch (error) {
+        session = null;
+      }
+    }
+
+    if (!session) {
+      var legacyToken = global.localStorage.getItem("authToken");
+      if (legacyToken) {
+        session = {
+          accessToken: legacyToken,
+          tokenType: global.localStorage.getItem("authTokenType") || "bearer",
+        };
+      }
+    }
+
+    return session;
+  }
+
+  function clearStoredSession() {
+    if (!global.localStorage) {
+      return;
+    }
+    global.localStorage.removeItem("authSession");
+    global.localStorage.removeItem("authToken");
+    global.localStorage.removeItem("authTokenType");
+  }
+
   function attachAuthNavHandlers(container) {
     var signOutButton = container.querySelector("#signOutButton");
     if (!signOutButton) {
       return;
     }
 
+    var backendHost =
+      global.AppConfig && global.AppConfig.backendHost ? global.AppConfig.backendHost : null;
+
     signOutButton.addEventListener("click", function (event) {
       event.preventDefault();
-      if (global.localStorage) {
-        global.localStorage.removeItem("authToken");
+      var session = readStoredSession();
+      var request = null;
+
+      if (backendHost && session && session.accessToken) {
+        var headers = {
+          Authorization:
+            (session.tokenType ? session.tokenType : "Bearer") + " " + session.accessToken,
+        };
+
+        request = fetch(backendHost + "/auth/logout", {
+          method: "POST",
+          headers: headers,
+        }).catch(function (error) {
+          console.warn("Logout request failed", error);
+        });
       }
-      global.location.href = "login.html";
+
+      Promise.resolve(request)
+        .catch(function () {
+          /* swallow errors after logging */
+        })
+        .finally(function () {
+          clearStoredSession();
+          global.location.href = "index.html";
+        });
     });
   }
 
