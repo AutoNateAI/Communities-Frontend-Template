@@ -1,10 +1,10 @@
 (function (global) {
   const ENVIRONMENTS = {
     development: {
-      backendHost: "http://localhost:4000",
+      backendHost: "http://127.0.0.1:8000",
     },
     production: {
-      backendHost: "https://api.example.com",
+      backendHost: "https://backend-template-small-snowflake-3911.fly.dev",
     },
   };
 
